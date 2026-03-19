@@ -18,7 +18,7 @@ function Sidebar({ slug }: Props) {
   const { page } = usePath();
 
   return (
-    <div className="w-[250px] border-r border-white/[0.06] fixed left-0 lg:inline-block bg-[#05060b] hidden bottom-0 top-0 overflow-hidden shadow-2xl relative">
+    <div className="w-[250px] border-r border-white/[0.06] fixed left-0 lg:inline-block bg-[#05060b] hidden bottom-0 top-0 overflow-hidden shadow-2xl">
       <div className="absolute inset-0 bg-gradient-to-b from-[#4a7dff]/[0.1] via-transparent to-transparent pointer-events-none" />
       <div className="flex flex-col gap-y-5 w-full h-full p-6 relative z-10 backdrop-blur-3xl">
         <div className="flex px-1 mb-10">
