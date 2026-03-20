@@ -62,7 +62,7 @@ export default function TermsPage() {
            <AlertCircle className="text-[#6c2bd9] animate-pulse" size={40} />
            <h3 className="text-3xl font-black">Our Responsibility</h3>
            <p className="text-white/60 text-sm max-w-xl">
-             While ZeroPilot integrates with official APIs, we are not responsible for account suspensions caused by inappropriate user configuration or violation of Meta's Community Standards. Always monitor your bot's behavior through our analytics logs.
+             While ZeroPilot integrates with official APIs, we are not responsible for account suspensions caused by inappropriate user configuration or violation of Meta&apos;s Community Standards. Always monitor your bot&apos;s behavior through our analytics logs.
            </p>
         </div>
       </div>

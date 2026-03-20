@@ -44,7 +44,7 @@ export default function SupportPage() {
           </div>
           <h1 className="text-5xl md:text-7xl font-black tracking-tighter">Support <span className="text-[#4a7dff]">Center</span></h1>
           <p className="text-white/40 text-lg max-w-xl">
-            Everything you need to get the most out of ZeroPilot. If you can't find what you're looking for, our team is ready to help.
+            Everything you need to get the most out of ZeroPilot. If you can&apos;t find what you&apos;re looking for, our team is ready to help.
           </p>
         </div>
 
@@ -84,7 +84,7 @@ export default function SupportPage() {
 
         <div className="p-10 rounded-[40px] bg-gradient-to-br from-[#4a7dff]/20 to-[#6c2bd9]/20 border border-white/10 text-center flex flex-col items-center gap-y-6">
            <h3 className="text-3xl font-black">Still have questions?</h3>
-           <p className="text-white/60 text-sm max-w-sm">We're building the future of social selling and we'd love to hear your feedback or feature requests.</p>
+           <p className="text-white/60 text-sm max-w-sm">We&apos;re building the future of social selling and we&apos;d love to hear your feedback or feature requests.</p>
            <Button className="bg-white text-black font-bold px-10 rounded-full h-12 hover:bg-white/90">Contact Sales</Button>
         </div>
       </div>
