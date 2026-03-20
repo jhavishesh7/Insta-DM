@@ -12,7 +12,7 @@ import {
 import { client } from "@/lib/prisma";
 import { NextRequest, NextResponse } from "next/server";
 import { getAgentByInstagramId } from "@/actions/agent";
-import { sendDm, sendPrivateMessage, sendPublicCommentReply } from "@/lib/fetch";
+import { checkFollowerStatus, sendDm, sendPrivateMessage, sendPublicCommentReply } from "@/lib/fetch";
 import { generateGeminiResponse } from "@/lib/gemini";
 
 import crypto from "crypto";
@@ -201,11 +201,17 @@ export async function POST(req: NextRequest) {
                automation.listener?.listener === "SMARTAI" ? generateGeminiResponse(incomingText, `${automation.listener?.prompt}: keep short`) : Promise.resolve(null)
             ]);
             
-            const response_text = automation.listener?.listener === "SMARTAI" ? (smart_ai_message || "DMed you!") : (automation.listener?.prompt || "");
+            const isFollowing = automation.listener?.followerCheckActive 
+              ? await checkFollowerStatus(senderId!, token)
+              : true;
+
+            const response_text = isFollowing 
+              ? (automation.listener?.listener === "SMARTAI" ? (smart_ai_message || "DMed you!") : (automation.listener?.prompt || ""))
+              : (automation.listener?.unfollowedMessage || "Follow us to unlock this content! 😉");
             
             const final_res = await sendPrivateMessage(accountId!, commentEvent.id, response_text, token);
 
-            if (automation.listener && (automation.listener.commentReplyType !== "SINGLE" || automation.listener.commentReply)) {
+            if (isFollowing && automation.listener && (automation.listener.commentReplyType !== "SINGLE" || automation.listener.commentReply)) {
                let public_reply = automation.listener.commentReply;
                if (automation.listener.commentReplyType === "MULTIPLE" && automation.listener.multipleCommentReplies.length > 0) {
                   const replies = automation.listener.multipleCommentReplies;

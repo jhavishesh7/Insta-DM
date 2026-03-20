@@ -166,3 +166,15 @@ export const generateToken = async (code: string) => {
   console.log("⚠️ Token received but access_token is missing:", token);
   return null;
 };
+
+export const checkFollowerStatus = async (igUserId: string, token: string) => {
+  try {
+    const res = await axios.get(
+      `${process.env.INSTAGRAM_BASE_URL}/${igUserId}?fields=is_user_follow_business&access_token=${token}`
+    );
+    return res.data.is_user_follow_business;
+  } catch (err: any) {
+    console.error("❌ checkFollowerStatus ERROR:", err.response?.data || err.message);
+    return false; // Default to not following if check fails
+  }
+};

@@ -70,7 +70,7 @@ const features = [
     tag: "Smart",
     title: "Sentiment Analysis",
     description:
-      "Your AI doesn't just reply — it reads the room. It detects frustration, excitement, and purchasing intent to tailor every response for maximum conversion.",
+      "Your AI doesn&apos;t just reply — it reads the room. It detects frustration, excitement, and purchasing intent to tailor every response for maximum conversion.",
     color: "#4a7dff",
     glow: "rgba(74,125,255,0.15)",
   },
@@ -79,7 +79,7 @@ const features = [
     tag: "Security",
     title: "Enterprise-Grade Security",
     description:
-      "Built on Instagram's official API with OAuth 2.0. Your tokens are encrypted and refreshed automatically. Zero risk. Full compliance.",
+      "Built on Instagram&apos;s official API with OAuth 2.0. Your tokens are encrypted and refreshed automatically. Zero risk. Full compliance.",
     color: "#6c2bd9",
     glow: "rgba(108,43,217,0.15)",
   },
@@ -101,13 +101,13 @@ const howItWorks = [
   {
     step: "03",
     title: "Launch & Go Live",
-    desc: "Turn your automations live. ZeroPilot's engine handles every interaction instantly, tracking everything on your dashboard.",
+    desc: "Turn your automations live. ZeroPilot&apos;s engine handles every interaction instantly, tracking everything on your dashboard.",
     icon: <Zap className="w-6 h-6" />,
   },
   {
     step: "04",
     title: "Analyze & Scale",
-    desc: "Review your detailed activity logs, see what's converting, and optimize your flows for maximum ROI.",
+    desc: "Review your detailed activity logs, see what&apos;s converting, and optimize your flows for maximum ROI.",
     icon: <TrendingUp className="w-6 h-6" />,
   },
 ];
@@ -121,7 +121,7 @@ function FeatureTabs() {
       icon: <Users className="w-5 h-5" />,
       content: {
         title: "Convert Comments to Customers",
-        desc: "Turn every 'Send me this!' or 'Price?' comment into a direct sales opportunity. Your bot detects specific keywords in comments and instantly sends a private DM with the information.",
+        desc: "Turn every &apos;Send me this!&apos; or &apos;Price?&apos; comment into a direct sales opportunity. Your bot detects specific keywords in comments and instantly sends a private DM with the information.",
         points: ["Automated Post/Reel detection", "Instant Private DM delivery", "No manual moderation needed"],
         visual: (
           <div className="flex flex-col gap-3 p-4 bg-white/5 rounded-2xl border border-white/10">
@@ -129,12 +129,12 @@ function FeatureTabs() {
               <div className="w-8 h-8 rounded-full bg-gradient-to-r from-pink-500 to-orange-400" />
               <div className="flex flex-col">
                 <span className="text-[10px] font-bold">User Comment</span>
-                <span className="text-[9px] text-white/40">"Info please!"</span>
+                <span className="text-[9px] text-white/40">&quot;Info please!&quot;</span>
               </div>
             </div>
             <div className="flex justify-end">
               <div className="w-2/3 p-3 bg-[#4a7dff] rounded-2xl rounded-tr-none text-[9px] font-medium">
-                Sent: "Hey! Just sent you the details via DM. Check your inbox! 🚀"
+                Sent: &quot;Hey! Just sent you the details via DM. Check your inbox! 🚀&quot;
               </div>
             </div>
           </div>
@@ -146,16 +146,16 @@ function FeatureTabs() {
       icon: <MessageSquare className="w-5 h-5" />,
       content: {
         title: "Keyword Trigger Engine",
-        desc: "Build instant response flows for your most common inquiries. Whether it's 'Hiring', 'Booking', or 'Shop', your bot responds in milliseconds.",
+        desc: "Build instant response flows for your most common inquiries. Whether it&apos;s &apos;Hiring&apos;, &apos;Booking&apos;, or &apos;Shop&apos;, your bot responds in milliseconds.",
         points: ["Unlimited Trigger Words", "Interactive Button Support", "24/7 Instant Response"],
         visual: (
           <div className="flex flex-col gap-3 p-4 bg-white/5 rounded-2xl border border-white/10">
              <div className="flex items-center gap-2 border-b border-white/5 pb-2 mb-2">
                 <div className="w-2 h-2 rounded-full bg-green-500" />
-                <span className="text-[9px] font-black uppercase tracking-widest text-white/40">Keyword Detected: "SHOP"</span>
+                <span className="text-[9px] font-black uppercase tracking-widest text-white/40">Keyword Detected: &quot;SHOP&quot;</span>
              </div>
              <div className="p-3 bg-white/5 border border-white/10 rounded-2xl text-[9px] leading-relaxed">
-                "Welcome to the store! ✨ Here are our current bestsellers. Which one interests you?"
+                &quot;Welcome to the store! ✨ Here are our current bestsellers. Which one interests you?&quot;
                 <div className="flex gap-2 mt-2">
                    <div className="px-3 py-1 bg-[#4a7dff]/20 text-[#4a7dff] rounded-full border border-[#4a7dff]/30 text-[8px]">New Arrivals</div>
                    <div className="px-3 py-1 bg-white/10 rounded-full border border-white/20 text-[8px]">Sale Items</div>
@@ -170,17 +170,17 @@ function FeatureTabs() {
       icon: <Bot className="w-5 h-5" />,
       content: {
         title: "The Super-Global Brain",
-        desc: "The ultimate safety net. If a user sends a message that doesn't match a keyword, your Global AI Agent steps in with your brand's unique personality to help.",
+        desc: "The ultimate safety net. If a user sends a message that doesn&apos;t match a keyword, your Global AI Agent steps in with your brand&apos;s unique personality to help.",
         points: ["Advanced Sentiment Detection", "Natural Language Processing", "Autonomous Problem Solving"],
         visual: (
           <div className="flex flex-col gap-3 p-4 bg-white/5 rounded-2xl border border-[#6c2bd9]/30 shadow-lg shadow-[#6c2bd9]/10">
              <div className="flex gap-2 items-start opacity-50">
                 <div className="w-6 h-6 rounded-full bg-white/10 shrink-0" />
-                <p className="text-[9px] p-2 bg-white/5 rounded-lg border border-white/10">"I'm confused about my order from last week..."</p>
+                <p className="text-[9px] p-2 bg-white/5 rounded-lg border border-white/10">&quot;I&apos;m confused about my order from last week...&quot;</p>
              </div>
              <div className="flex gap-2 items-start justify-end">
                 <p className="text-[9px] p-2 bg-[#6c2bd9] rounded-lg rounded-tr-none max-w-[80%] leading-normal font-medium">
-                  "I'd love to help! I've located your recent order. Could you confirm the email address used so I can check its live status for you?"
+                  &quot;I&apos;d love to help! I&apos;ve located your recent order. Could you confirm the email address used so I can check its live status for you?&quot;
                 </p>
                 <div className="w-6 h-6 rounded-lg bg-gradient-to-br from-[#4a7dff] to-[#6c2bd9] shrink-0 flex items-center justify-center">
                   <Bot className="w-4 h-4 text-white" />

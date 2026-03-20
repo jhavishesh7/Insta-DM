@@ -135,7 +135,7 @@ const CommentReplyConfig = ({ id }: Props) => {
                 <div className="space-y-1">
                   <p className="text-sm text-blue-100 font-medium">Smart AI Replies Enabled</p>
                   <p className="text-xs text-blue-200/60 leading-relaxed">
-                    Our AI will analyze the context of the user's comment and generate a unique, friendly public reply automatically.
+                    Our AI will analyze the context of the user&apos;s comment and generate a unique, friendly public reply automatically.
                   </p>
                 </div>
              </div>
