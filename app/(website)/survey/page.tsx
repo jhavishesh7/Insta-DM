@@ -157,7 +157,7 @@ function SurveyContent() {
           <div className="text-6xl animate-pulse">🎉</div>
           <h1 className="text-3xl font-bold text-white tracking-tight">Mission Received.</h1>
           <p className="text-zinc-400 text-sm leading-relaxed">
-            Your {isBusiness ? "business" : "influencer"} insights will shape the next era of Autopilot. We'll be in touch soon.
+            Your {isBusiness ? "business" : "influencer"} insights will shape the next era of Autopilot. We&apos;ll be in touch soon.
           </p>
           <button onClick={() => window.close()} className="mt-4 px-6 py-3 rounded-full border border-zinc-700 text-sm text-zinc-300 hover:border-white transition-all">
             Close this tab

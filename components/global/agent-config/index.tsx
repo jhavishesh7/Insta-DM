@@ -19,20 +19,20 @@ function AgentConfig({}: Props) {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
 
-  useEffect(() => {
-    if (user) {
-      fetchAgent();
-    }
-  }, [user]);
-
-  const fetchAgent = async () => {
+  const fetchAgent = React.useCallback(async () => {
     const res = (await getPersonalAssistant(user?.id!)) as any;
     if (res?.personalAssistant) {
       setPrompt(res.personalAssistant.prompt);
       setActive(res.personalAssistant.active);
     }
     setLoading(false);
-  };
+  }, [user]);
+
+  useEffect(() => {
+    if (user) {
+      fetchAgent();
+    }
+  }, [user, fetchAgent]);
 
   const onSave = async () => {
     setSaving(true);
