@@ -2,6 +2,7 @@
 
 import React, { useEffect, useRef, useState } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { Button } from "@/components/ui/button";
 import {
   CheckCircle,
@@ -322,7 +323,7 @@ function FloatingNav() {
         } px-8 py-4 flex items-center justify-between`}
       >
         <Link href="/" className="flex items-center gap-3">
-          <img src="/logo.png" alt="ZeroPilot Logo" className="w-10 h-10 rounded-xl" />
+          <Image src="/logo.png" alt="ZeroPilot Logo" width={40} height={40} className="rounded-xl" />
           <span className="text-xl font-black tracking-tighter">
             Zero<span className="text-[#6c2bd9]">Pilot</span>
           </span>

@@ -122,7 +122,7 @@ const AutomationSummary = ({ id }: Props) => {
                   <p className="text-[10px] text-white/40 uppercase font-bold tracking-tighter">Private Message</p>
                   <div className="bg-[#111111]/50 p-3 rounded-lg border-l-2 border-orange-400/50">
                     <p className="text-xs text-[#9D9D9D] leading-relaxed line-clamp-3 italic">
-                      "{listener.prompt}"
+                      &quot;{listener.prompt}&quot;
                     </p>
                   </div>
                 </div>
@@ -132,7 +132,7 @@ const AutomationSummary = ({ id }: Props) => {
                     <p className="text-[10px] text-white/40 uppercase font-bold tracking-tighter">Public Reply</p>
                     <div className="bg-[#111111]/50 p-3 rounded-lg border-l-2 border-[#4a7dff]/50">
                       <p className="text-xs text-[#9D9D9D] leading-relaxed line-clamp-3 italic">
-                        "{listener.commentReply}"
+                        &quot;{listener.commentReply}&quot;
                       </p>
                     </div>
                   </div>
