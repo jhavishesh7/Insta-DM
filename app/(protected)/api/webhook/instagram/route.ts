@@ -1,4 +1,5 @@
 import { findAutomation } from "@/actions/automation/queries";
+import { getWorkflowState } from "@/actions/webhook/state";
 import {
   createChatHistory,
   getChatHistory,
@@ -12,8 +13,9 @@ import {
 import { client } from "@/lib/prisma";
 import { NextRequest, NextResponse } from "next/server";
 import { getAgentByInstagramId } from "@/actions/agent";
-import { checkFollowerStatus, sendDm, sendPrivateMessage, sendPublicCommentReply } from "@/lib/fetch";
+import { checkFollowerStatus, sendCtaButton, sendDm, sendPrivateMessage, sendPublicCommentReply } from "@/lib/fetch";
 import { generateGeminiResponse } from "@/lib/gemini";
+import { followGateMiddleware, handleFollowVerification } from "@/actions/webhook/middleware";
 
 import crypto from "crypto";
 
@@ -49,20 +51,153 @@ function isRateLimited(senderId?: string) {
     return false;
 }
 
-function isValidSignature(req: NextRequest, body: string) {
+async function executeAutomation(
+  automation: any,
+  senderId: string,
+  accountId: string,
+  incomingText: string,
+  token: string,
+  commentEvent: any = null
+) {
+  try {
+    const commenterUsername = commentEvent?.from?.username;
+    
+    // 1. DM Logic
+    if (!commentEvent) {
+      if (automation.listener?.listener === "MESSAGE") {
+        console.log("📤 Sending Direct response...");
+        const listener = automation.listener as any;
+        const hasCtas = listener.ctasActive && listener.ctas && Array.isArray(listener.ctas) && listener.ctas.length > 0;
+        
+        const res = hasCtas 
+          ? await sendCtaButton(accountId, senderId, listener.prompt, listener.ctas, token)
+          : await sendDm(accountId, senderId, listener.prompt, token);
+
+        if (res && (res.status === 200 || res.message_id)) {
+          if (listener.isEndBlock) console.log("🏁 Automation reached an End Block.");
+          
+          Promise.all([
+            trackResponse(automation.id, "DM"),
+            saveActivityLog(automation.userId!, automation.id, `Sent ${hasCtas ? 'CTA' : 'DM'}: ${automation.name}`, "DM"),
+            updateMetrics(automation.userId!, "DM")
+          ]).catch(err => console.error("Post-DM error:", err));
+          return true;
+        }
+      }
+
+      if (automation.listener?.listener === "SMARTAI" && automation.User?.subscription?.plan === "PRO") {
+        console.log("🤖 Generating AI DM response...");
+        const smart_ai_message = await generateGeminiResponse(
+          incomingText,
+          `${automation.listener?.prompt}: Keep response short`
+        );
+        const response_text = smart_ai_message || "I'm sorry, I couldn't process that.";
+        
+        const [res] = await Promise.all([
+          sendDm(accountId, senderId, response_text, token),
+          client.$transaction([
+            createChatHistory(automation.id, senderId, incomingText, accountId),
+            createChatHistory(automation.id, accountId, response_text, senderId)
+          ])
+        ]);
+        
+        if (res.status === 200) {
+          Promise.all([
+            trackResponse(automation.id, "DM"),
+            saveActivityLog(automation.userId!, automation.id, `AI Response sent`, "DM"),
+            updateMetrics(automation.userId!, "DM")
+          ]).catch(err => console.error("Post-AI DM error:", err));
+          return true;
+        }
+      }
+    }
+
+    // 2. COMMENT Logic
+    if (commentEvent) {
+      const listener = automation.listener as any;
+      const [smart_ai_message] = await Promise.all([
+        listener?.listener === "SMARTAI" ? generateGeminiResponse(incomingText, `${listener?.prompt}: keep short`) : Promise.resolve(null)
+      ]);
+      
+      const response_text = listener?.listener === "SMARTAI" 
+        ? (smart_ai_message || "DMed you!") 
+        : (listener?.prompt || "");
+      
+      // Use CTAs for the private message if active
+      const hasCtas = listener?.ctasActive && listener?.ctas && Array.isArray(listener.ctas) && listener.ctas.length > 0;
+      const final_res = await sendPrivateMessage(
+        accountId, 
+        commentEvent.id, 
+        response_text, 
+        token,
+        hasCtas ? listener.ctas : undefined
+      );
+
+      if (listener && (listener.commentReplyType !== "SINGLE" || listener.commentReply)) {
+        let public_reply = automation.listener.commentReply;
+        if (automation.listener.commentReplyType === "MULTIPLE" && automation.listener.multipleCommentReplies.length > 0) {
+          const replies = automation.listener.multipleCommentReplies;
+          public_reply = replies[Math.floor(Math.random() * replies.length)];
+        } else if (automation.listener.commentReplyType === "AI") {
+          const ai_comment = await generateGeminiResponse(incomingText, `Generate a very short friendly reply to this comment: "${incomingText}". Mention the user by name: @${commenterUsername}`);
+          public_reply = ai_comment || "Check your DMs! 🚀";
+        }
+        
+        // Always mention the user in the public reply if username is available
+        const mention = commenterUsername ? `@${commenterUsername} ` : "";
+        const final_public_reply = public_reply ? `${mention}${public_reply}` : undefined;
+
+        if (final_public_reply) {
+          sendPublicCommentReply(commentEvent.id, final_public_reply, token).catch(() => {});
+        }
+      }
+
+      if (final_res && final_res.status === 200) {
+        Promise.all([
+          trackResponse(automation.id, "COMMENT"),
+          updateMetrics(automation.userId!, "COMMENT"),
+          automation.listener?.listener === "SMARTAI" ? client.$transaction([
+            createChatHistory(automation.id, senderId, incomingText, accountId),
+            createChatHistory(automation.id, accountId, response_text, senderId)
+          ]) : Promise.resolve()
+        ]).catch(err => console.error("Post-comment error:", err));
+        return true;
+      }
+    }
+  } catch (error: any) {
+    console.error("❌ executeAutomation FATAL ERROR:", error.response?.data || error.message || error);
+  }
+  return false;
+}
+
+function isValidSignature(req: NextRequest, body: Buffer) {
   const signature = req.headers.get("x-hub-signature-256");
-  if (!signature) return true; // Default to true if header missing (prevent blocking ngrok tests unless secret is verified)
+  if (!signature) return true; 
+
+  if (!process.env.INSTAGRAM_CLIENT_SECRET) {
+     console.error("❌ ERROR: INSTAGRAM_CLIENT_SECRET is missing from environment variables.");
+     return true; // Don't block during dev if secret is missing
+  }
 
   try {
     const expectedSignature = crypto
-      .createHmac("sha256", process.env.INSTAGRAM_CLIENT_SECRET || "")
-      .update(body)
+      .createHmac("sha256", process.env.INSTAGRAM_CLIENT_SECRET)
+      .update(body) 
       .digest("hex");
 
-    return signature === `sha256=${expectedSignature}`;
-  } catch (err) {
-    console.error("Signature Validation Error:", err);
-    return true; // Don't block on error during dev
+    const isValid = signature === `sha256=${expectedSignature}`;
+
+    if (!isValid) {
+      console.warn("⚠️ Webhook Signature Mismatch Details:");
+      console.log("   Received (End):", signature?.slice(-8));
+      console.log("   Expected (End):", expectedSignature.slice(-8));
+      console.log("   Secret Used (Length):", process.env.INSTAGRAM_CLIENT_SECRET.length);
+    }
+
+    return isValid;
+  } catch (error) {
+    console.error("🔥 Signature Validation Internal Error:", error);
+    return false;
   }
 }
 
@@ -80,30 +215,40 @@ export async function GET(req: NextRequest) {
 
 export async function POST(req: NextRequest) {
   try {
-    const rawBody = await req.text();
+    const buffer = Buffer.from(await req.arrayBuffer());
+    const rawBody = buffer.toString("utf-8");
     const body = JSON.parse(rawBody);
     
     // 1. Security check: Validate Signature
-    if (!isValidSignature(req, rawBody)) {
+    const signatureValid = isValidSignature(req, buffer);
+    if (!signatureValid) {
        console.error("❌ SECURITY WARNING: Invalid Webhook Signature Header received");
+       console.log("👉 Byte Length:", buffer.length);
+       console.log("👉 Char Length:", rawBody.length);
     }
 
     const entry = body.entry?.[0];
     const messagingEvent = entry?.messaging?.[0];
     const commentEvent = entry?.changes?.[0]?.value;
 
+    console.log("📨 Incoming Webhook:", {
+      type: messagingEvent ? "MESSAGE" : "CHANGE",
+      senderId: messagingEvent?.sender?.id || commentEvent?.from?.id,
+      text: messagingEvent?.message?.text || commentEvent?.text,
+      isEcho: messagingEvent?.message?.is_echo
+    });
+
+    // Determine Sender and Message Content
+    const senderId = messagingEvent?.sender?.id || commentEvent?.from?.id;
+    const incomingText = (messagingEvent?.message?.text || commentEvent?.text || "").trim();
+    const quickReply = messagingEvent?.message?.quick_reply;
     // Idempotency: Always exit early if we've seen this exact MID or ID recently
     const eventId = messagingEvent?.message?.mid || commentEvent?.id;
     if (eventId && isDuplicateEvent(eventId)) {
        console.log("♻️ [IDEMPOTENCY] Skipping duplicate event:", eventId);
        return NextResponse.json({ message: "Duplicate" }, { status: 200 });
     }
-
-    console.log("📨 Incoming Webhook:", JSON.stringify(body, null, 2));
-
-    // Determine Sender and Message Content
-    const senderId = messagingEvent?.sender?.id || commentEvent?.from?.id;
-    const incomingText = (messagingEvent?.message?.text || commentEvent?.text || "").trim();
+    const postback = messagingEvent?.postback;
     const isEcho = messagingEvent?.message?.is_echo;
     const accountId = entry?.id;
 
@@ -118,7 +263,7 @@ export async function POST(req: NextRequest) {
        return NextResponse.json({ message: "Self-event ignored" }, { status: 200 });
     }
 
-    if (!incomingText) {
+    if (!incomingText && !quickReply && !postback) {
        console.log("ℹ️ [SKIP] Non-text interaction (read receipt, delivery, reaction, or share)");
        return NextResponse.json({ message: "Non-text ignored" }, { status: 200 });
     }
@@ -129,6 +274,56 @@ export async function POST(req: NextRequest) {
         return NextResponse.json({ message: "Rate limit exceeded" }, { status: 200 });
     }
 
+    // 4. HANDLE BUTTON CLICKS (Quick Reply or Postback)
+    const payload = quickReply?.payload || postback?.payload;
+    if (payload && payload.startsWith("FOLLOW_VERIFY_")) {
+      console.log("👆 Follow Verification Clicked:", payload);
+      const token = await client.integrations.findUnique({
+        where: { instagramId: accountId },
+        select: { token: true }
+      });
+      
+      if (token?.token) {
+        const result = await handleFollowVerification(senderId!, accountId!, token.token, payload);
+        if (result.verified && result.automationId) {
+           console.log("✅ Follow Verified! Resuming workflow...");
+           const state = await getWorkflowState(senderId!);
+           const automation = (await findAutomation(result.automationId)) as any;
+           
+           if (automation) {
+              const listener = automation.listener as any;
+              const successMsg = (listener?.customFollowerMessages && listener?.followerSuccessMessage) 
+                ? listener.followerSuccessMessage 
+                : "Thanks for following! 🚀 Resuming your request...";
+
+              await sendDm(accountId!, senderId!, successMsg, token.token);
+              
+              // Resume the original automation
+              await executeAutomation(
+                automation, 
+                senderId!, 
+                accountId!, 
+                state?.lastIncomingText || "", 
+                token.token,
+                null // Resume is always DM-based for follow gate
+              );
+              return NextResponse.json({ message: "Resumed" }, { status: 200 });
+           }
+        } else {
+           const automationId = payload.replace("FOLLOW_VERIFY_", "");
+           const automation = (await findAutomation(automationId)) as any;
+           const listener = automation?.listener as any;
+           
+           const retryMsg = (listener?.customFollowerMessages && listener?.followerRetryMessage) 
+             ? listener.followerRetryMessage 
+             : "Still doesn't look like you're following. Please click the button again once you've followed us! 😊";
+
+           await sendDm(accountId!, senderId!, retryMsg, token.token);
+           return NextResponse.json({ message: "Retry sent" }, { status: 200 });
+        }
+      }
+    }
+
     let matcher;
     if (incomingText) {
        console.log("🔍 Searching for keyword match...");
@@ -136,107 +331,41 @@ export async function POST(req: NextRequest) {
     }
 
     if (matcher && matcher.automationId) {
-      console.log("🤖 Keyword Match Found:", matcher.word);
-
-      // 1. DM HANDLER
-      if (messagingEvent) {
-        const automation = (await getKeywordAutomation(matcher.automationId, true)) as any;
-        if (automation && automation.trigger) {
-          const token = automation.User?.integrations[0]?.token;
-          
-          if (automation.listener?.listener === "MESSAGE" && token) {
-            console.log("📤 Sending Direct DM response...");
-            const res = await sendDm(accountId!, senderId!, automation.listener?.prompt || "", token);
-            if (res.status === 200) {
-              // Side effects in parallel (don't block response) ⚡
-              Promise.all([
-                 trackResponse(automation.id, "DM"),
-                 saveActivityLog(automation.userId!, automation.id, `Sent DM: ${automation.name}`, "DM"),
-                 updateMetrics(automation.userId!, "DM")
-              ]).catch(err => console.error("Post-DM error:", err));
-              
-              return NextResponse.json({ message: "DM sent" }, { status: 200 });
-            }
-          }
-
-          if (automation.listener?.listener === "SMARTAI" && automation.User?.subscription?.plan === "PRO" && token) {
-            console.log("🤖 Generating AI DM response...");
-            const smart_ai_message = await generateGeminiResponse(
-              incomingText,
-              `${automation.listener?.prompt}: Keep response short`
-            );
-            const response_text = smart_ai_message || "I'm sorry, I couldn't process that.";
-            
-            // Send DM and update DB in parallel ⚡
-            const [res] = await Promise.all([
-               sendDm(accountId!, senderId!, response_text, token),
-               client.$transaction([
-                  createChatHistory(automation.id, senderId!, incomingText, accountId!),
-                  createChatHistory(automation.id, accountId!, response_text, senderId!)
-               ])
-            ]);
-            
-            if (res.status === 200) {
-               Promise.all([
-                  trackResponse(automation.id, "DM"),
-                  saveActivityLog(automation.userId!, automation.id, `AI Response sent`, "DM"),
-                  updateMetrics(automation.userId!, "DM")
-               ]).catch(err => console.error("Post-AI DM error:", err));
-               
-               return NextResponse.json({ message: "AI DM sent" }, { status: 200 });
-            }
-          }
+      const startMatch = Date.now();
+      console.log("🤖 Keyword Match Found:", { word: matcher.word, automationId: matcher.automationId });
+      const automation = (await getKeywordAutomation(matcher.automationId, messagingEvent ? true : false)) as any;
+      console.log(`⏱️ DB Fetch took: ${Date.now() - startMatch}ms`);
+      
+      if (automation && automation.trigger) {
+        // 🔑 Match the correct integration token for this specific account
+        const integration = automation.User?.integrations.find((i: any) => i.instagramId === accountId) || automation.User?.integrations[0];
+        const token = integration?.token;
+        
+        if (!token) {
+           console.error("❌ ERROR: No valid access token found for account:", accountId);
+           return NextResponse.json({ message: "No token" }, { status: 200 });
         }
-      }
+        
+        // Follow Gate Middleware Check
+        const startGate = Date.now();
+        const allowed = await followGateMiddleware(senderId!, accountId!, token, automation, incomingText, commentEvent?.id);
+        console.log(`⏱️ Follow Gate took: ${Date.now() - startGate}ms. Allowed: ${allowed}`);
+        if (!allowed) return NextResponse.json({ message: "Follow gate active" }, { status: 200 });
 
-      // 2. COMMENT HANDLER
-      if (commentEvent) {
-        const automation = (await getKeywordAutomation(matcher.automationId, false)) as any;
-        const automation_post = await getKeywordPost(entry.changes[0].value.media.id, automation?.id!);
+        const startExec = Date.now();
+        const result = await executeAutomation(
+          automation, 
+          senderId!, 
+          accountId!, 
+          incomingText, 
+          token,
+          commentEvent
+        );
+        console.log(`⏱️ executeAutomation took: ${Date.now() - startExec}ms. Result: ${result}`);
 
-        if (automation && automation_post && automation.trigger) {
-          const token = automation.User?.integrations[0]?.token;
-          if (token) {
-            const [smart_ai_message] = await Promise.all([
-               automation.listener?.listener === "SMARTAI" ? generateGeminiResponse(incomingText, `${automation.listener?.prompt}: keep short`) : Promise.resolve(null)
-            ]);
-            
-            const isFollowing = automation.listener?.followerCheckActive 
-              ? await checkFollowerStatus(senderId!, token)
-              : true;
-
-            const response_text = isFollowing 
-              ? (automation.listener?.listener === "SMARTAI" ? (smart_ai_message || "DMed you!") : (automation.listener?.prompt || ""))
-              : (automation.listener?.unfollowedMessage || "Follow us to unlock this content! 😉");
-            
-            const final_res = await sendPrivateMessage(accountId!, commentEvent.id, response_text, token);
-
-            if (isFollowing && automation.listener && (automation.listener.commentReplyType !== "SINGLE" || automation.listener.commentReply)) {
-               let public_reply = automation.listener.commentReply;
-               if (automation.listener.commentReplyType === "MULTIPLE" && automation.listener.multipleCommentReplies.length > 0) {
-                  const replies = automation.listener.multipleCommentReplies;
-                  public_reply = replies[Math.floor(Math.random() * replies.length)];
-               } else if (automation.listener.commentReplyType === "AI") {
-                  const ai_comment = await generateGeminiResponse(incomingText, "Generate a very short friendly reply to this comment.");
-                  public_reply = ai_comment || "Check your DMs! 🚀";
-               }
-               if (public_reply) sendPublicCommentReply(commentEvent.id, public_reply, token).catch(() => {});
-            }
-
-            if (final_res && final_res.status === 200) {
-               Promise.all([
-                  trackResponse(automation.id, "COMMENT"),
-                  updateMetrics(automation.userId!, "COMMENT"),
-                  automation.listener?.listener === "SMARTAI" ? client.$transaction([
-                        createChatHistory(automation.id, accountId!, senderId!, incomingText),
-                        createChatHistory(automation.id, accountId!, senderId!, response_text)
-                  ]) : Promise.resolve()
-               ]).catch(err => console.error("Post-comment error:", err));
-               
-               return NextResponse.json({ message: "Comment success" }, { status: 200 });
-            }
-          }
-        }
+        if (result) return NextResponse.json({ message: "Automation executed" }, { status: 200 });
+      } else {
+        console.log("⚠️ SKIPPING: Automation or trigger type (DM/Comment) mismatch or not found.");
       }
     }
 
@@ -246,7 +375,9 @@ export async function POST(req: NextRequest) {
       if (customer_history.history.length > 0 && customer_history.automationId) {
         const automation = (await findAutomation(customer_history.automationId)) as any;
         if (automation?.User?.subscription?.plan === "PRO" && automation.listener?.listener === "SMARTAI") {
-          const token = automation.User?.integrations[0]?.token;
+          const integration = automation.User?.integrations.find((i: any) => i.instagramId === accountId) || automation.User?.integrations[0];
+          const token = integration?.token;
+          
           if (token) {
              const smart_ai_message = await generateGeminiResponse(incomingText, `${automation.listener?.prompt}: Keep short\nContext: ${JSON.stringify(customer_history.history)}`);
              const response_text = smart_ai_message || "How can I help further?";
@@ -272,7 +403,8 @@ export async function POST(req: NextRequest) {
     if (!matcher && messagingEvent) {
       const agent = (await getAgentByInstagramId(accountId!)) as any;
       if (agent && agent.User?.personalAssistant?.active) {
-        const token = agent.User.integrations[0]?.token;
+        const integration = agent.User.integrations.find((i: any) => i.instagramId === accountId) || agent.User.integrations[0];
+        const token = integration?.token;
         if (token) {
            const smart_ai_message = await generateGeminiResponse(incomingText, agent.User.personalAssistant.prompt);
            if (smart_ai_message) {

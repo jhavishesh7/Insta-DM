@@ -9,6 +9,7 @@ import {
   addPosts,
   addTrigger,
   createAutomation,
+  deleteAutomationQuery,
   deleteKeywordsQuery,
   findAutomation,
   getAutomation,
@@ -16,6 +17,17 @@ import {
   updateCommentReply,
   updateFollowerCheck,
 } from "./queries";
+
+export const deleteAutomationAction = async (id: string) => {
+  await onCurrentUser();
+  try {
+    const deleted = await deleteAutomationQuery(id);
+    if (deleted) return { status: 200, data: "Automation deleted" };
+    return { status: 404, data: "Automation not found" };
+  } catch (error) {
+    return { status: 500, data: "Failed to delete automation" };
+  }
+};
 
 export const createAutomations = async (id?: string) => {
   const user = await onCurrentUser();
@@ -82,12 +94,15 @@ export const saveListener = async (
   automationId: string,
   listener: "SMARTAI" | "MESSAGE",
   prompt: string,
-  reply?: string
+  reply?: string,
+  ctas?: any,
+  isEndBlock?: boolean,
+  ctasActive?: boolean
 ) => {
   await onCurrentUser();
 
   try {
-    const create = await addListener(automationId, listener, prompt, reply);
+    const create = await addListener(automationId, listener, prompt, reply, ctas, isEndBlock, ctasActive);
 
     if (create) return { status: 200, data: "Listener created" };
     return { status: 404, data: "Failed to create listener" };
@@ -104,8 +119,9 @@ export const saveTrigger = async (automationId: string, trigger: string[]) => {
 
     if (create) return { status: 200, data: "Trigger created" };
     return { status: 404, data: "Failed to create trigger" };
-  } catch (error) {
-    return { status: 500, data: "Failed to save trigger" };
+  } catch (error: any) {
+    console.error("❌ Save Trigger Error:", error);
+    return { status: 500, data: error.message || "Failed to save trigger" };
   }
 };
 
@@ -261,11 +277,25 @@ export const saveCommentReply = async (
 export const saveFollowerCheck = async (
   automationId: string,
   status: boolean,
-  message?: string
+  message?: string,
+  buttonLabel?: string,
+  payload?: string,
+  successMessage?: string,
+  retryMessage?: string,
+  customMessages?: boolean
 ) => {
   await onCurrentUser();
   try {
-    const update = await updateFollowerCheck(automationId, status, message);
+    const update = await updateFollowerCheck(
+      automationId, 
+      status, 
+      message, 
+      buttonLabel, 
+      payload,
+      successMessage,
+      retryMessage,
+      customMessages
+    );
     if (update) return { status: 200, data: "Follower check updated" };
     return { status: 404, data: "Failed to update" };
   } catch (error) {

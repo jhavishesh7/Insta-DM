@@ -38,6 +38,7 @@ export const getKeywordAutomation = async (
           integrations: {
             select: {
               token: true,
+              instagramId: true,
             },
           },
         },

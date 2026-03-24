@@ -30,8 +30,12 @@ export const AUTOMATION = createSlice({
       );
       return state;
     },
+    TRIGGER_SYNC: (state, action: PayloadAction<{ types: string[] }>) => {
+      state.trigger!.types = action.payload.types;
+      return state;
+    },
   },
 });
 
-export const { TRIGGER } = AUTOMATION.actions;
+export const { TRIGGER, TRIGGER_SYNC } = AUTOMATION.actions;
 export default AUTOMATION.reducer;

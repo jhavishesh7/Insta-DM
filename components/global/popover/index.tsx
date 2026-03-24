@@ -17,11 +17,15 @@ function PopOver({ children, className, trigger }: Props) {
     <Popover>
       <PopoverTrigger asChild>{trigger}</PopoverTrigger>
       <PopoverContent
-        className={cn("bg-[#1D1D1D] shadow-lg", className)}
-        align="end"
+        className={cn("bg-[#1D1D1D] shadow-2xl border border-white/10 p-5 z-[100]", className)}
+        align="center"
         side="bottom"
+        sideOffset={12}
+        collisionPadding={20}
       >
-        {children}
+        <div className="max-h-[85vh] overflow-y-auto scrollbar-hide">
+            {children}
+        </div>
       </PopoverContent>
     </Popover>
   );

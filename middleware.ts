@@ -1,3 +1,4 @@
+import { NextResponse } from "next/server";
 import { clerkMiddleware, createRouteMatcher } from "@clerk/nextjs/server";
 
 const isProtectedRoute = createRouteMatcher([
@@ -6,7 +7,15 @@ const isProtectedRoute = createRouteMatcher([
   "/callback(.*)",
 ]);
 
+const isPreLaunchPage = createRouteMatcher(["/pre-launch(.*)"]);
+
 export default clerkMiddleware(async (auth, req) => {
+  const isPrelaunchMode = process.env.PRELAUNCH === "true";
+
+  if (isPrelaunchMode && req.nextUrl.pathname === "/") {
+    return NextResponse.rewrite(new URL("/pre-launch", req.url));
+  }
+
   if (isProtectedRoute(req)) await auth.protect();
 });
 

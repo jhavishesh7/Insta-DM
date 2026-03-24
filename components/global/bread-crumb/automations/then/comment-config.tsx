@@ -26,14 +26,23 @@ const CommentReplyConfig = ({ id }: Props) => {
   const [newReply, setNewReply] = useState("");
   const [followerCheck, setFollowerCheck] = useState(false);
   const [unfollowedMsg, setUnfollowedMsg] = useState("");
+  const [unfollowedButtonLabel, setUnfollowedButtonLabel] = useState("");
+  const [customMessages, setCustomMessages] = useState(false);
+  const [successMessage, setSuccessMessage] = useState("");
+  const [retryMessage, setRetryMessage] = useState("");
 
   useEffect(() => {
     if (listener) {
-      setCommentType((listener.commentReplyType as any) || "SINGLE");
-      setSingleReply(listener.commentReply || "");
-      setMultipleReplies(listener.multipleCommentReplies || []);
-      setFollowerCheck(listener.followerCheckActive || false);
-      setUnfollowedMsg(listener.unfollowedMessage || "");
+      const l = listener as any;
+      setCommentType(l.commentReplyType || "SINGLE");
+      setSingleReply(l.commentReply || "");
+      setMultipleReplies(l.multipleCommentReplies || []);
+      setFollowerCheck(l.followerCheckActive || false);
+      setUnfollowedMsg(l.unfollowedMessage || "");
+      setUnfollowedButtonLabel(l.unfollowedButtonLabel || "");
+      setCustomMessages(l.customFollowerMessages || false);
+      setSuccessMessage(l.followerSuccessMessage || "");
+      setRetryMessage(l.followerRetryMessage || "");
     }
   }, [listener]);
 
@@ -45,7 +54,16 @@ const CommentReplyConfig = ({ id }: Props) => {
 
   const { mutate: updateFollower, isPending: updatingFollower } = useMutationData(
     ["update-follower-check"],
-    (data: any) => saveFollowerCheck(id, data.status, data.message),
+    (data: any) => saveFollowerCheck(
+      id, 
+      data.status, 
+      data.message, 
+      data.buttonLabel, 
+      undefined, // payload is default
+      data.successMessage,
+      data.retryMessage,
+      data.customMessages
+    ),
     "automation-info"
   );
 
@@ -59,7 +77,20 @@ const CommentReplyConfig = ({ id }: Props) => {
 
   const handleUpdateFollower = (status: boolean) => {
     setFollowerCheck(status);
-    updateFollower({ status, message: unfollowedMsg });
+    updateFollower({ 
+      status, 
+      message: unfollowedMsg, 
+      buttonLabel: unfollowedButtonLabel,
+      successMessage,
+      retryMessage,
+      customMessages
+    });
+  };
+
+  const handleFollowerDataBlur = () => {
+    if (followerCheck) {
+      handleUpdateFollower(true);
+    }
   };
 
   const addReply = () => {
@@ -168,17 +199,78 @@ const CommentReplyConfig = ({ id }: Props) => {
         </div>
 
         {followerCheck && (
-          <div className="space-y-3 animate-in fade-in slide-in-from-top-2 duration-300">
-            <Label className="text-xs">Message for non-followers</Label>
-            <Input 
-              placeholder="e.g. Follow us to unlock this content! 😉" 
-              value={unfollowedMsg}
-              onChange={(e) => setUnfollowedMsg(e.target.value)}
-              onBlur={() => handleUpdateFollower(true)}
-              className="bg-black/20 border-white/10 text-white"
-            />
-            <p className="text-[10px] text-purple-400/60 italic">
-              Note: If active, the bot will send this message instead of the main reply to non-followers.
+          <div className="space-y-6 animate-in fade-in slide-in-from-top-2 duration-300">
+            <div className="space-y-4 p-4 rounded-lg bg-black/20 border border-white/5">
+                <div className="space-y-2">
+                    <Label className="text-xs">Message for non-followers</Label>
+                    <Input 
+                        placeholder="e.g. Follow us to unlock access! 😉" 
+                        value={unfollowedMsg}
+                        onChange={(e) => setUnfollowedMsg(e.target.value)}
+                        onBlur={handleFollowerDataBlur}
+                        className="bg-black/20 border-white/10 text-white"
+                    />
+                </div>
+                <div className="space-y-2">
+                    <Label className="text-xs">CTA Button Label</Label>
+                    <Input 
+                        placeholder="e.g. Unlock 🔓" 
+                        value={unfollowedButtonLabel}
+                        onChange={(e) => setUnfollowedButtonLabel(e.target.value)}
+                        onBlur={handleFollowerDataBlur}
+                        className="bg-black/20 border-white/10 text-white"
+                    />
+                </div>
+            </div>
+
+            <div className="space-y-4 pt-2">
+                <div className="flex items-center justify-between">
+                    <Label className="text-sm font-medium text-white">Custom After-Check Messages</Label>
+                    <Switch 
+                        checked={customMessages} 
+                        onCheckedChange={(v) => {
+                            setCustomMessages(v);
+                            updateFollower({ 
+                              status: followerCheck, 
+                              message: unfollowedMsg, 
+                              buttonLabel: unfollowedButtonLabel,
+                              successMessage,
+                              retryMessage,
+                              customMessages: v
+                            });
+                        }}
+                        className="data-[state=checked]:bg-blue-600"
+                    />
+                </div>
+                
+                {customMessages && (
+                    <div className="space-y-4 animate-in fade-in slide-in-from-top-2 duration-300">
+                        <div className="space-y-2">
+                            <Label className="text-xs text-green-400/80">Success Message (Sent after verification)</Label>
+                            <Input 
+                                placeholder="e.g. Thanks for following! 🚀 Resuming..." 
+                                value={successMessage}
+                                onChange={(e) => setSuccessMessage(e.target.value)}
+                                onBlur={handleFollowerDataBlur}
+                                className="bg-black/20 border-white/10 text-white border-green-500/20"
+                            />
+                        </div>
+                        <div className="space-y-2">
+                            <Label className="text-xs text-red-400/80">Retry Message (Sent if still not following)</Label>
+                            <Input 
+                                placeholder="e.g. Still not following! Please try again. 😊" 
+                                value={retryMessage}
+                                onChange={(e) => setRetryMessage(e.target.value)}
+                                onBlur={handleFollowerDataBlur}
+                                className="bg-black/20 border-white/10 text-white border-red-500/20"
+                            />
+                        </div>
+                    </div>
+                )}
+            </div>
+
+            <p className="text-[10px] text-purple-400/60 italic leading-relaxed">
+              Note: When active, non-followers receive a persistent CTA Button card asking them to follow. Once they click your custom button, their follow status is verified.
             </p>
           </div>
         )}

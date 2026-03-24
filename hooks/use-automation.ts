@@ -1,5 +1,6 @@
 import {
   createAutomations,
+  deleteAutomationAction,
   deleteKeywords,
   saveKeywords,
   saveListener,
@@ -7,8 +8,9 @@ import {
   saveTrigger,
   updateAutomationName,
 } from "@/actions/automation";
-import { TRIGGER } from "@/redux/slices/automation";
+import { TRIGGER, TRIGGER_SYNC } from "@/redux/slices/automation";
 import { AppDispatch, useAppSelector } from "@/redux/store";
+import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { useDispatch } from "react-redux";
 import { z } from "zod";
@@ -20,6 +22,18 @@ export const useCreateAutomation = (id?: string) => {
     ["create-automation"],
     () => createAutomations(id),
     "user-automation"
+  );
+
+  return { isPending, mutate };
+};
+
+export const useDeleteAutomation = (id: string, slug: string) => {
+  const router = useRouter();
+  const { isPending, mutate } = useMutationData(
+    ["delete-automation"],
+    () => deleteAutomationAction(id),
+    "user-automation",
+    () => router.push(`/dashboard/${slug}/automation`)
   );
 
   return { isPending, mutate };
@@ -59,35 +73,38 @@ export const useEditAutomation = (automationId: string) => {
   return { edit, enableEdit, disableEdit, inputRef, isPending };
 };
 
-export const useListener = (id: string) => {
+export const useListener = (id: string, onSuccess?: () => void) => {
   const [listener, setListener] = useState<"MESSAGE" | "SMARTAI" | null>(null);
 
   const promptSchema = z.object({
     prompt: z.string().min(1),
-    reply: z.string(),
+    reply: z.string().optional(),
+    ctas: z.any().optional(),
+    isEndBlock: z.boolean().optional(),
+    ctasActive: z.boolean().optional(),
   });
 
   const { isPending, mutate } = useMutationData(
     ["create-listener"],
-    (data: { prompt: string; reply: string }) =>
-      saveListener(id, listener || "MESSAGE", data.prompt, data.reply),
-    "automation-info"
+    (data: { prompt: string; reply?: string; ctas?: any; isEndBlock?: boolean, ctasActive?: boolean }) =>
+      saveListener(id, listener || "MESSAGE", data.prompt, data.reply, data.ctas, data.isEndBlock, data.ctasActive),
+    "automation-info",
+    onSuccess
   );
 
-  const { onFormSubmit, register, errors, watch, reset } = useZodForm(
+  const { onFormSubmit, register, errors, watch, reset, setValue } = useZodForm(
     promptSchema,
     mutate
   );
 
-  const onSetListener = (listener: "MESSAGE" | "SMARTAI") => {
-    setListener(listener);
-    reset();
+  const onSetListener = (l: "MESSAGE" | "SMARTAI") => {
+    setListener(l);
   };
 
-  return { onSetListener, onFormSubmit, register, isPending, listener };
+  return { onSetListener, onFormSubmit, register, isPending, listener, watch, setValue, reset };
 };
 
-export const useTrigger = (id: string) => {
+export const useTrigger = (id: string, onSuccess?: () => void) => {
   const types = useAppSelector(
     (state) => state.AutomationReducer.trigger?.types
   );
@@ -98,15 +115,20 @@ export const useTrigger = (id: string) => {
     dispatch(TRIGGER({ trigger: { type } }));
   };
 
+  const onSyncTriggers = (types: string[]) => {
+    dispatch(TRIGGER_SYNC({ types }));
+  };
+
   const { isPending, mutate } = useMutationData(
     ["add-trigger"],
     (data: { types: string[] }) => saveTrigger(id, data.types),
-    "automation-info"
+    "automation-info",
+    onSuccess
   );
 
   const onSaveTrigger = () => mutate({ types });
 
-  return { types, onSetTrigger, onSaveTrigger, isPending };
+  return { types, onSetTrigger, onSaveTrigger, onSyncTriggers, isPending };
 };
 
 export const useKeywords = (id: string) => {

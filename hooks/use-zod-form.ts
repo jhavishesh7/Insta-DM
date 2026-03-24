@@ -15,6 +15,7 @@ const useZodForm = (
     handleSubmit,
     watch,
     reset,
+    setValue,
   } = useForm<z.infer<typeof schema>>({
     resolver: zodResolver(schema),
     defaultValues: {
@@ -23,19 +24,21 @@ const useZodForm = (
   });
 
   const onFormSubmit = handleSubmit(async (values) => {
-    const words = values.prompt.trim().split(/\s+/);
-    const reply = values.reply.trim().split(/\s+/);
-    const wordLength = values.prompt.trim() === "" ? 0 : words.length;
-    const replyLength = values.reply.trim() === "" ? 0 : reply.length;
+    const promptValue = values.prompt || "";
+    const replyValue = values.reply || "";
+    const words = promptValue.trim().split(/\s+/);
+    const reply = replyValue.trim().split(/\s+/);
+    const wordLength = promptValue.trim() === "" ? 0 : words.length;
+    const replyLength = replyValue.trim() === "" ? 0 : reply.length;
 
-    if (wordLength !== 0 && wordLength <= 150) {
-      if (replyLength <= 20) {
+    if (wordLength !== 0 && wordLength <= 250) {
+      if (replyLength <= 100) {
         mutation({ ...values });
       } else {
-        toast("Please enter a reply between 1 and 20 words.");
+        toast("Please enter a reply with less than 100 words.");
       }
     } else {
-      toast("Please enter a prompt between 1 and 150 words.");
+      toast("Please enter a prompt between 1 and 250 words.");
     }
   });
 
@@ -45,6 +48,7 @@ const useZodForm = (
     onFormSubmit,
     watch,
     reset,
+    setValue,
   };
 };
 

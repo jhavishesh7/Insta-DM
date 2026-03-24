@@ -92,7 +92,10 @@ export const addListener = async (
   automationId: string,
   listener: "SMARTAI" | "MESSAGE",
   prompt: string,
-  reply?: string
+  reply?: string,
+  ctas?: any,
+  isEndBlock?: boolean,
+  ctasActive?: boolean
 ) => {
   return await client.automation.update({
     where: {
@@ -100,10 +103,23 @@ export const addListener = async (
     },
     data: {
       listener: {
-        create: {
-          listener,
-          prompt,
-          commentReply: reply,
+        upsert: {
+          create: {
+            listener,
+            prompt,
+            commentReply: reply,
+            ctas: ctas || [],
+            isEndBlock: isEndBlock || false,
+            ctasActive: ctasActive || false,
+          },
+          update: {
+            listener,
+            prompt,
+            commentReply: reply,
+            ctas: ctas || [],
+            isEndBlock: isEndBlock || false,
+            ctasActive: ctasActive || false,
+          },
         },
       },
     },
@@ -111,34 +127,31 @@ export const addListener = async (
 };
 
 export const addTrigger = async (automationId: string, trigger: string[]) => {
-  console.log("🚀 ~ addTrigger ~ automationId:", automationId);
-  if (trigger.length === 2) {
-    return await client.automation.update({
+  console.log("🚀 ~ addTrigger ~ automationId:", automationId, "trigger:", trigger);
+  try {
+    // Delete existing triggers first to ensure we only have the ones selected
+    await client.trigger.deleteMany({
       where: {
-        id: automationId,
-      },
-      data: {
-        trigger: {
-          createMany: {
-            data: [{ type: trigger[0] }, { type: trigger[1] }],
-          },
-        },
+        automationId,
       },
     });
-  }
 
-  return await client.automation.update({
-    where: {
-      id: automationId,
-    },
-    data: {
-      trigger: {
-        create: {
-          type: trigger[0],
-        },
+    if (trigger.length === 2) {
+      return await client.trigger.createMany({
+        data: [{ type: trigger[0], automationId }, { type: trigger[1], automationId }],
+      });
+    }
+
+    return await client.trigger.create({
+      data: {
+        type: trigger[0],
+        automationId,
       },
-    },
-  });
+    });
+  } catch (error) {
+    console.error("❌ Prisma Add Trigger Error:", error);
+    throw error;
+  }
 };
 
 export const addKeyWords = async (automationId: string, keywords: string) => {
@@ -208,13 +221,29 @@ export const updateCommentReply = async (
 export const updateFollowerCheck = async (
   automationId: string,
   status: boolean,
-  message?: string
+  message?: string,
+  buttonLabel?: string,
+  payload?: string,
+  successMessage?: string,
+  retryMessage?: string,
+  customMessages?: boolean
 ) => {
   return await client.listener.update({
     where: { automationId },
     data: {
       followerCheckActive: status,
       unfollowedMessage: message,
+      unfollowedButtonLabel: buttonLabel,
+      unfollowedPayload: payload,
+      followerSuccessMessage: successMessage,
+      followerRetryMessage: retryMessage,
+      customFollowerMessages: customMessages,
     },
+  });
+};
+
+export const deleteAutomationQuery = async (id: string) => {
+  return await client.automation.delete({
+    where: { id },
   });
 };

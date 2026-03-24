@@ -43,21 +43,41 @@ export const sendDm = async (
 
 export const sendPrivateMessage = async (
   userId: string,
-  receiverId: string,
+  commentId: string,
   prompt: string,
-  token: string
+  token: string,
+  buttons?: { title: string; payload?: string; type?: "postback" | "web_url"; url?: string }[]
 ) => {
-  console.log("📤 Sending Private Message to comment:", receiverId);
+  console.log("📤 Sending Private Message to comment:", commentId);
+  const hasCtas = buttons && Array.isArray(buttons) && buttons.length > 0;
+  
   try {
+    const messageContent = hasCtas ? {
+      attachment: {
+        type: "template",
+        payload: {
+          template_type: "generic",
+          elements: [{
+            title: prompt,
+            buttons: buttons.map(b => ({
+              type: b.type || "postback",
+              title: b.title.substring(0, 20),
+              ...(b.type === "web_url" ? { url: b.url } : { payload: b.payload })
+            }))
+          }]
+        }
+      }
+    } : {
+      text: prompt,
+    };
+
     const res = await axios.post(
       `${process.env.INSTAGRAM_BASE_URL}/${userId}/messages`,
       {
         recipient: {
-          comment_id: receiverId,
+          comment_id: commentId,
         },
-        message: {
-          text: prompt,
-        },
+        message: messageContent,
       },
       {
         headers: {
@@ -170,11 +190,65 @@ export const generateToken = async (code: string) => {
 export const checkFollowerStatus = async (igUserId: string, token: string) => {
   try {
     const res = await axios.get(
-      `${process.env.INSTAGRAM_BASE_URL}/${igUserId}?fields=is_user_follow_business&access_token=${token}`
+      `${process.env.INSTAGRAM_BASE_URL}/${igUserId}?fields=is_user_follow_business&access_token=${token}`,
+      { timeout: 3000 }
     );
-    return res.data.is_user_follow_business;
+    return res.data.is_user_follow_business === true;
   } catch (err: any) {
-    console.error("❌ checkFollowerStatus ERROR:", err.response?.data || err.message);
-    return false; // Default to not following if check fails
+    const errorData = err.response?.data?.error;
+    console.error("❌ checkFollowerStatus STRICT FAILURE:", errorData || err.message);
+    return false; // Strict mode: Any error results in blocked access
+  }
+};
+
+export const sendCtaButton = async (
+  userId: string,
+  receiverId: string,
+  text: string,
+  buttons: { title: string; payload: string; type?: "postback" | "web_url"; url?: string }[],
+  token: string
+) => {
+  if (!token) {
+    console.error("❌ sendCtaButton ERROR: Access token is missing");
+    return null;
+  }
+  // revert to using the same config as sendDm which is working for basic text
+  const url = `${process.env.INSTAGRAM_BASE_URL}/${userId}/messages`;
+  try {
+    const res = await axios.post(
+      url,
+      {
+        recipient: { id: receiverId },
+        messaging_type: "RESPONSE",
+        message: {
+          attachment: {
+            type: "template",
+            payload: {
+              template_type: "generic",
+              elements: [
+                {
+                  title: text,
+                  buttons: buttons.map(b => ({
+                    type: b.type || "postback",
+                    title: b.title.substring(0, 20),
+                    ...(b.type === "web_url" ? { url: b.url } : { payload: b.payload })
+                  }))
+                }
+              ]
+            }
+          }
+        },
+      },
+      {
+        headers: { 
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json" 
+        },
+      }
+    );
+    return res.data;
+  } catch (err: any) {
+    console.error("❌ sendCtaButton ERROR:", err.response?.data || err.message);
+    return null;
   }
 };

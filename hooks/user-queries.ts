@@ -13,9 +13,10 @@ export const useQueryAutomation = () => {
   });
 };
 
+
 export const useQueryAutomations = (id: string) => {
   return useQuery({
-    queryKey: ["automation-info"],
+    queryKey: ["automation-info", id],
     queryFn: () => getAutomationInfo(id),
   });
 };

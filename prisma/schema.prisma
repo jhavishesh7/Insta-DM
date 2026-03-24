@@ -129,6 +129,14 @@ model Listener {
   multipleCommentReplies String[]           @default([])
   followerCheckActive    Boolean            @default(false)
   unfollowedMessage      String?
+  unfollowedButtonLabel  String?
+  unfollowedPayload      String?
+  followerSuccessMessage String?
+  followerRetryMessage   String?
+  customFollowerMessages Boolean            @default(false)
+  ctas                   Json?              @default("[]")
+  ctasActive             Boolean            @default(false)
+  isEndBlock             Boolean            @default(false)
 }
 
 model Trigger {
@@ -145,6 +153,38 @@ model Keyword {
   automationId String?     @db.Uuid
 
   @@unique([automationId, word]) //this constraints ensure user cant use the same keyword on multiple automations
+}
+
+model UserWorkflowState {
+  igUserId           String   @id
+  pageId             String
+  isFollowerVerified Boolean  @default(false)
+  flowState          String   @default("IDLE")
+  lastIncomingText   String?
+  lastAutomationId   String?
+  updatedAt          DateTime @updatedAt
+}
+
+model WaitlistEntry {
+  id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  email     String   @unique
+  name      String?
+  createdAt DateTime @default(now())
+}
+
+model SurveyResponse {
+  id                  String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  email               String
+  name                String?
+  instagramHandle     String?
+  followerCount       String?
+  currentTools        String?
+  biggestChallenge    String?
+  interestedFeatures  String[]
+  willingToPay        String?
+  betaTester          Boolean  @default(false)
+  additionalComments  String?
+  createdAt           DateTime @default(now())
 }
 
 enum SUBSCRIPTION_PLAN {

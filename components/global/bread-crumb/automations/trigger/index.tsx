@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import Loader from "@/components/global/loader";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
@@ -17,31 +18,23 @@ type Props = {
 };
 
 function Trigger({ id }: Props) {
-  const { isPending, onSaveTrigger, onSetTrigger, types } = useTrigger(id);
+  const [isEditing, setIsEditing] = useState(false);
+  const { isPending, onSaveTrigger, onSetTrigger, onSyncTriggers, types } = useTrigger(id, () => setIsEditing(false));
   const { data } = useQueryAutomations(id);
 
-  /*   const data = {
-    data: {
-      trigger: [
-        {
-          type: "COMMENTS",
-        },
-      ],
-      keywords: [
-        { id: "1", word: "hello", automationId: "M001" },
-        { id: "2", word: "welcome", automationId: null },
-        { id: "3", word: "thank you", automationId: "M003" },
-      ],
-      listener: null,
-    },
-  }; */
+  useEffect(() => {
+    if (isEditing && data?.data?.trigger) {
+      onSyncTriggers(data.data.trigger.map((t: any) => t.type));
+    }
+  }, [isEditing, data, onSyncTriggers]);
 
-  if (data?.data && data?.data?.trigger?.length > 0) {
+  if (data?.data && data?.data?.trigger?.length > 0 && !isEditing) {
     return (
       <div className="flex flex-col gap-y-6 items-center">
         <ActiveTrigger
           type={data.data.trigger[0].type}
           keywords={data.data.keywords}
+          onEdit={() => setIsEditing(true)}
         />
 
         {data.data.trigger.length > 1 && (
@@ -58,8 +51,19 @@ function Trigger({ id }: Props) {
             <ActiveTrigger
               type={data.data.trigger[1].type}
               keywords={data.data.keywords}
+              onEdit={() => setIsEditing(true)}
             />
           </>
+        )}
+
+        {data.data.trigger.length < 2 && (
+          <Button
+            variant="ghost"
+            onClick={() => setIsEditing(true)}
+            className="text-[#4a7dff] hover:text-[#4a7dff] hover:bg-[#4a7dff]/10"
+          >
+            + Add Another Trigger
+          </Button>
         )}
 
         {!data.data.listener && <ThenActions id={id} />}

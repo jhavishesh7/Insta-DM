@@ -46,7 +46,7 @@
 
 **ZeroPilot** is maintained and primarily developed by:
 
-**[Vishesh Jha](https://github.com/vjha)** *(Main Developer)*
+**[Vishesh Jha]** *(Main Developer)*
 
 ---
 

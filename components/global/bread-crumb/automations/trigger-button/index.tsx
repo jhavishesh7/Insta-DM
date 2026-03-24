@@ -16,7 +16,7 @@ function TriggerButton({ label, children }: Props) {
           <p className="text-[#767BDD] font-bold">{label}</p>
         </div>
       }
-      className="w-[400px]"
+      className="w-[450px] max-w-[calc(100vw-32px)]"
     >
       {children}
     </PopOver>
