@@ -1,5 +1,6 @@
 "use client";
 import { useSearchParams } from "next/navigation";
+import Image from "next/image";
 import { useState, useTransition, Suspense } from "react";
 import { submitSurvey } from "./actions";
 
@@ -272,9 +273,7 @@ function SurveyContent() {
     <div className="min-h-screen bg-black text-white flex flex-col">
       {/* Header */}
       <div className="px-6 py-5 flex items-center gap-3 border-b border-zinc-900">
-        <div className="w-7 h-7 rounded-lg bg-white flex items-center justify-center">
-          <span className="text-black font-black text-xs">Z</span>
-        </div>
+        <Image src="/logo.svg" width={28} height={28} alt="ZeroPilot Logo" />
         <span className="font-semibold text-sm tracking-tight capitalize">ZeroPilot — {type} Survey</span>
       </div>
 
