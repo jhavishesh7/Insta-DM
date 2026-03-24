@@ -323,7 +323,7 @@ function FloatingNav() {
         } px-8 py-4 flex items-center justify-between`}
       >
         <Link href="/" className="flex items-center gap-3">
-          <Image src="/logo.png" alt="ZeroPilot Logo" width={40} height={40} className="rounded-xl" />
+          <Image src="/logo.svg" alt="ZeroPilot Logo" width={40} height={40} className="rounded-xl" />
           <span className="text-xl font-black tracking-tighter">
             Zero<span className="text-[#6c2bd9]">Pilot</span>
           </span>

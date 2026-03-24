@@ -26,6 +26,11 @@ export const submitSurvey = async (data: {
   willingToPay?: string;
   betaTester?: boolean;
   additionalComments?: string;
+  type?: string;
+  igUsage?: string;
+  manualDmVolume?: string;
+  automationDepth?: string;
+  primaryGoal?: string;
 }) => {
   try {
     await client.surveyResponse.create({
@@ -40,6 +45,11 @@ export const submitSurvey = async (data: {
         willingToPay: data.willingToPay,
         betaTester: data.betaTester || false,
         additionalComments: data.additionalComments,
+        type: data.type,
+        igUsage: data.igUsage,
+        manualDmVolume: data.manualDmVolume,
+        automationDepth: data.automationDepth,
+        primaryGoal: data.primaryGoal,
       }
     });
     return { status: 201, message: "Survey submitted! Thank you." };

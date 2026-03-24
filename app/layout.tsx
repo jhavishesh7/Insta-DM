@@ -11,10 +11,43 @@ import NextTopLoader from "nextjs-toploader";
 const jakarta = Plus_Jakarta_Sans({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: "ZeroPilot | Elite AI Instagram DM & Comment Automation",
+  title: {
+    default: "ZeroPilot | Elite AI Instagram DM & Comment Automation",
+    template: "%s | ZeroPilot",
+  },
   description: "Scale your Instagram engagement with ZeroPilot. The advanced AI-powered engine for your DMs and comments. Developed by Vishesh Jha.",
   keywords: ["Instagram Automation", "AI DM Bot", "Instagram AI", "Social Media Automation", "ZeroPilot"],
-  icons: "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 40 40' fill='none'><rect width='40' height='40' rx='10' fill='%234a7dff'/><path d='M12 12H28V15L16 25V25.5H28V29H12V26L24 16V15.5H12V12Z' fill='white'/></svg>",
+  metadataBase: new URL("https://zero-pilot.vercel.app"),
+  alternates: {
+    canonical: "/",
+  },
+  openGraph: {
+    title: "ZeroPilot | Elite AI Instagram DM & Comment Automation",
+    description: "Scale your Instagram engagement with ZeroPilot. The advanced AI-powered engine for your DMs and comments.",
+    url: "https://zero-pilot.vercel.app",
+    siteName: "ZeroPilot",
+    images: [
+      {
+        url: "/og-image.png",
+        width: 1200,
+        height: 630,
+        alt: "ZeroPilot | Next Gen Instagram Automation",
+      },
+    ],
+    locale: "en_US",
+    type: "website",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "ZeroPilot | AI Instagram Automation",
+    description: "Scale your Instagram engagement with ZeroPilot.",
+    images: ["/og-image.png"],
+  },
+  icons: {
+    icon: "/logo.svg",
+    shortcut: "/logo.svg",
+    apple: "/logo.svg",
+  },
 };
 
 export default function RootLayout({

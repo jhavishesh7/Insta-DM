@@ -38,7 +38,11 @@ function SurveyContent() {
     willingToPay: "",
     betaTester: false,
     additionalComments: "",
-    type: type, // Store the type
+    type: type,
+    igUsage: "",
+    manualDmVolume: "",
+    automationDepth: "",
+    primaryGoal: "",
   });
 
   const set = (key: string, val: string | boolean | string[]) =>
@@ -55,81 +59,177 @@ function SurveyContent() {
 
   const steps = [
     // 0: Identity
-    <div key="0" className="space-y-5">
-      <StepLabel num={1} total={5} label={isBusiness ? "Business Details" : "Who are you?"} />
-      <Field label={isBusiness ? "Business Name" : "Your Name"} placeholder={isBusiness ? "e.g. Acme Studio" : "e.g. Priya Sharma"}>
-        <input className={input} value={form.name} onChange={(e) => set("name", e.target.value)} placeholder={isBusiness ? "e.g. Acme Studio" : "e.g. Priya Sharma"} />
-      </Field>
-      <Field label="Email Address *" placeholder="">
-        <input className={input} type="email" value={form.email} onChange={(e) => set("email", e.target.value)} placeholder="hello@yourbrand.com" required />
-      </Field>
-      <Field label="Instagram Handle" placeholder="">
-        <div className="flex items-center gap-2">
-          <span className="text-zinc-400 font-mono text-sm">@</span>
-          <input className={input} value={form.instagramHandle} onChange={(e) => set("instagramHandle", e.target.value)} placeholder="yourusername" />
-        </div>
-      </Field>
+    <div key="0" className="space-y-6">
+      <StepLabel num={1} total={8} label={isBusiness ? "Business Identification" : "Tell us about yourself"} />
+      <p className="text-zinc-500 text-sm leading-relaxed">
+        Let&apos;s start with the basics so we can personalize your experience.
+      </p>
+      <div className="space-y-4">
+        <Field label={isBusiness ? "Company / Brand Name" : "Full Name"} placeholder={isBusiness ? "e.g. Acme Creative" : "e.g. Sarah Jenkins"}>
+          <input className={input} value={form.name} onChange={(e) => set("name", e.target.value)} placeholder={isBusiness ? "Brand Name" : "Full Name"} />
+        </Field>
+        <Field label="Business Email *" placeholder="">
+          <input className={input} type="email" value={form.email} onChange={(e) => set("email", e.target.value)} placeholder="name@company.com" required />
+        </Field>
+        <Field label="Instagram Handle (Optional)" placeholder="">
+          <div className="flex items-center gap-2">
+            <span className="text-zinc-400 font-mono text-sm">@</span>
+            <input className={input} value={form.instagramHandle} onChange={(e) => set("instagramHandle", e.target.value)} placeholder="username" />
+          </div>
+        </Field>
+      </div>
     </div>,
 
-    // 1: Audience
-    <div key="1" className="space-y-5">
-      <StepLabel num={2} total={5} label={isBusiness ? "Current Reach" : "Your audience size"} />
-      <div className="grid grid-cols-1 gap-3">
+    // 1: Platform Usage (Usage)
+    <div key="1" className="space-y-6">
+      <StepLabel num={2} total={8} label="Platform Habits" />
+      <p className="text-zinc-500 text-sm leading-relaxed">
+        How deep is your daily interaction with Instagram currently?
+      </p>
+      <div className="space-y-4">
+        <Field label="How many hours do you spend on Instagram daily for work?">
+          <div className="grid grid-cols-2 gap-2">
+            {["< 1 hr", "1-3 hrs", "3-5 hrs", "5+ hrs"].map(v => (
+              <button key={v} onClick={() => set("igUsage", v)}
+                className={`px-4 py-3 rounded-xl text-xs font-medium border transition-all ${form.igUsage === v ? "border-white bg-white text-black" : "border-zinc-800 bg-zinc-900/40"}`}>
+                {v}
+              </button>
+            ))}
+          </div>
+        </Field>
+        <Field label="Primary content focus">
+           <div className="grid grid-cols-3 gap-2">
+            {["Reels", "Stories", "Static"].map(v => (
+              <button key={v} onClick={() => set("primaryGoal", v)}
+                className={`px-4 py-3 rounded-xl text-[10px] font-medium border transition-all ${form.primaryGoal === v ? "border-white bg-white text-black" : "border-zinc-800 bg-zinc-900/40"}`}>
+                {v}
+              </button>
+            ))}
+          </div>
+        </Field>
+      </div>
+    </div>,
+
+    // 2: Audience (Audience)
+    <div key="2" className="space-y-6">
+      <StepLabel num={3} total={8} label="Audience Scale" />
+      <p className="text-zinc-500 text-sm leading-relaxed">
+        Select the bracket that best represents your current follower base.
+      </p>
+      <div className="grid grid-cols-1 gap-2.5">
         {FOLLOWERS.map((f) => (
           <button key={f} onClick={() => set("followerCount", f)}
-            className={`w-full px-5 py-3 rounded-xl text-sm font-medium border transition-all duration-200 text-left ${form.followerCount === f ? "border-white bg-white text-black" : "border-zinc-700 bg-zinc-900/60 text-zinc-300 hover:border-zinc-400"}`}>
-            {f} {isBusiness ? "reach/followers" : "followers"}
+            className={`w-full px-5 py-3.5 rounded-xl text-sm font-medium border transition-all duration-200 text-left ${form.followerCount === f ? "border-white bg-white text-black shadow-[0_0_20px_rgba(255,255,255,0.1)]" : "border-zinc-800 bg-zinc-900/40 text-zinc-400 hover:border-zinc-600"}`}>
+            {f} {isBusiness ? "active reach" : "followers"}
           </button>
         ))}
       </div>
     </div>,
 
-    // 2: Pain
-    <div key="2" className="space-y-5">
-      <StepLabel num={3} total={5} label="What's your current setup?" />
-      <Field label="Tools you currently use for engagement">
-        <textarea className={`${input} resize-none h-24`} value={form.currentTools} onChange={(e) => set("currentTools", e.target.value)} placeholder="ManyChat, manual replies, etc." />
-      </Field>
-      <Field label="Biggest bottleneck in your Instagram workflow">
-        <textarea className={`${input} resize-none h-24`} value={form.biggestChallenge} onChange={(e) => set("biggestChallenge", e.target.value)} placeholder={isBusiness ? "Scaling support, lead capture, etc." : "Managing DMs, converting comments, etc."} />
-      </Field>
+    // 3: Workflow (DM Volume)
+    <div key="3" className="space-y-6">
+      <StepLabel num={4} total={8} label="Manual Workload" />
+      <p className="text-zinc-500 text-sm leading-relaxed">
+        Let&apos;s talk numbers. This helps us understand the ROI we can provide.
+      </p>
+      <div className="space-y-4">
+        <Field label="Average manual DMs/Comments per week">
+          <div className="grid grid-cols-2 gap-2">
+            {["0 - 100", "100 - 500", "500 - 1,000", "1,000+"].map(v => (
+              <button key={v} onClick={() => set("manualDmVolume", v)}
+                className={`px-4 py-3 rounded-xl text-xs font-medium border transition-all ${form.manualDmVolume === v ? "border-white bg-white text-black" : "border-zinc-800 bg-zinc-900/40"}`}>
+                {v}
+              </button>
+            ))}
+          </div>
+        </Field>
+        <Field label="Current Tools (if any)">
+           <input className={input} value={form.currentTools} onChange={(e) => set("currentTools", e.target.value)} placeholder="e.g. ManyChat, Meta Suite, Manual" />
+        </Field>
+      </div>
     </div>,
 
-    // 3: Features
-    <div key="3" className="space-y-5">
-      <StepLabel num={4} total={5} label="Which features excite you most?" />
-      <p className="text-xs text-zinc-500">Select all that apply</p>
-      <div className="grid grid-cols-2 gap-3">
+    // 4: Pain Points (Challenges)
+    <div key="4" className="space-y-6">
+      <StepLabel num={5} total={8} label="Core Bottlenecks" />
+      <p className="text-zinc-500 text-sm leading-relaxed">
+        What keeps you from scaling your Instagram organic growth?
+      </p>
+      <div className="space-y-4">
+        <Field label="Describe your biggest challenge in details">
+          <textarea 
+            className={`${input} resize-none h-32 leading-relaxed`} 
+            value={form.biggestChallenge} 
+            onChange={(e) => set("biggestChallenge", e.target.value)} 
+            placeholder={isBusiness ? "How does manual engagement affect your sales pipeline?" : "How much time are you losing every day responding to repetitive questions?"} 
+          />
+        </Field>
+      </div>
+    </div>,
+
+    // 5: Features (Selection)
+    <div key="5" className="space-y-6">
+      <StepLabel num={6} total={8} label="The Autopilot Wishlist" />
+      <p className="text-zinc-500 text-[11px] uppercase tracking-widest font-bold">Select all that apply</p>
+      <div className="grid grid-cols-2 gap-2.5">
         {FEATURES.map((f) => (
           <button key={f} onClick={() => toggleFeature(f)}
-            className={`px-4 py-3 rounded-xl text-xs font-medium border transition-all duration-200 text-left ${form.interestedFeatures.includes(f) ? "border-white bg-white text-black" : "border-zinc-700 bg-zinc-900/60 text-zinc-300 hover:border-zinc-400"}`}>
-            {form.interestedFeatures.includes(f) && <span className="mr-1">✓</span>}{f}
+            className={`px-4 py-4 rounded-xl text-[10px] font-black uppercase tracking-tighter border transition-all duration-200 text-center flex flex-col items-center justify-center gap-2 ${form.interestedFeatures.includes(f) ? "border-white bg-white text-black" : "border-zinc-800 bg-zinc-900/40 text-zinc-500"}`}>
+            {form.interestedFeatures.includes(f) ? <span className="text-[14px]">⭐</span> : null}
+            {f}
           </button>
         ))}
       </div>
     </div>,
 
-    // 4: Pricing & beta
-    <div key="4" className="space-y-5">
-      <StepLabel num={5} total={5} label="Final thoughts" />
-      <Field label="Target monthly investment for automation?">
-        <div className="space-y-2">
-          {PAY.map((p) => (
-            <button key={p} onClick={() => set("willingToPay", p)}
-              className={`w-full px-5 py-3 rounded-xl text-sm font-medium border transition-all duration-200 text-left ${form.willingToPay === p ? "border-white bg-white text-black" : "border-zinc-700 bg-zinc-900/60 text-zinc-300 hover:border-zinc-400"}`}>
-              {p}
-            </button>
-          ))}
-        </div>
-      </Field>
-      <button onClick={() => set("betaTester", !form.betaTester)}
-        className={`flex items-center gap-3 px-5 py-3 rounded-xl border text-sm font-medium transition-all ${form.betaTester ? "border-white bg-white text-black" : "border-zinc-700 bg-zinc-900/60 text-zinc-300"}`}>
-        <span className="w-5 h-5 rounded border-2 border-current flex items-center justify-center text-xs">{form.betaTester ? "✓" : ""}</span>
-        Yes! Register for {isBusiness ? "Business" : ""} Beta Access
-      </button>
-      <Field label="Anything else we should know?">
-        <textarea className={`${input} resize-none h-20`} value={form.additionalComments} onChange={(e) => set("additionalComments", e.target.value)} placeholder="Ideas, specific needs, etc." />
-      </Field>
+    // 6: Automation Philosophy (Depth)
+    <div key="6" className="space-y-6">
+      <StepLabel num={7} total={8} label="Automation Philosophy" />
+      <p className="text-zinc-500 text-sm leading-relaxed">
+        How much do you want to rely on AI?
+      </p>
+      <div className="space-y-3">
+        {[
+          { id: "FULL", t: "Hands-off", d: "100% AI handled responses" },
+          { id: "HYBRID", t: "Hybrid", d: "AI suggests, I approve" },
+          { id: "SIMPLE", t: "Basic", d: "Just keyword-based triggers" },
+        ].map(v => (
+          <button key={v.id} onClick={() => set("automationDepth", v.id)}
+            className={`w-full p-4 rounded-2xl border transition-all text-left flex flex-col gap-1 ${form.automationDepth === v.id ? "border-white bg-white text-black" : "border-zinc-800 bg-zinc-900/40"}`}>
+            <span className="font-black uppercase text-xs tracking-widest">{v.t}</span>
+            <span className={`text-[10px] ${form.automationDepth === v.id ? "text-black/60" : "text-zinc-500"}`}>{v.d}</span>
+          </button>
+        ))}
+      </div>
+    </div>,
+
+    // 7: Finalize & Pricing
+    <div key="7" className="space-y-6">
+      <StepLabel num={8} total={8} label="Ready for ZeroPilot?" />
+      <div className="space-y-5">
+        <Field label="Desired Investment (Monthly)">
+          <div className="grid grid-cols-2 gap-2">
+            {PAY.map((p) => (
+              <button key={p} onClick={() => set("willingToPay", p)}
+                className={`px-4 py-3 rounded-xl text-[10px] font-bold border transition-all duration-200 text-center ${form.willingToPay === p ? "border-white bg-white text-black" : "border-zinc-800 bg-zinc-900/40 text-zinc-500 hover:border-zinc-400"}`}>
+                {p}
+              </button>
+            ))}
+          </div>
+        </Field>
+        
+        <button onClick={() => set("betaTester", !form.betaTester)}
+          className={`w-full flex items-center justify-between px-6 py-4 rounded-2xl border text-sm font-black uppercase tracking-widest transition-all ${form.betaTester ? "border-[#4a7dff] bg-[#4a7dff] text-white" : "border-zinc-800 bg-zinc-900/40 text-zinc-400"}`}>
+          <span>Register for Beta</span>
+          <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center ${form.betaTester ? "border-white bg-white text-[#4a7dff]" : "border-zinc-700"}`}>
+            {form.betaTester ? "✓" : ""}
+          </div>
+        </button>
+
+        <Field label="Anything else? (Future ideas / Goals)">
+          <textarea className={`${input} resize-none h-20 text-xs`} value={form.additionalComments} onChange={(e) => set("additionalComments", e.target.value)} placeholder="I want to see feature X..." />
+        </Field>
+      </div>
     </div>,
   ];
 
@@ -137,7 +237,8 @@ function SurveyContent() {
 
   const canNext = () => {
     if (step === 0) return form.email.includes("@") && form.email.includes(".");
-    if (step === 1) return !!form.followerCount;
+    if (step === 1) return !!form.igUsage;
+    if (step === 2) return !!form.followerCount;
     return true;
   };
 

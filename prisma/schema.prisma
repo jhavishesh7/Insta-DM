@@ -173,7 +173,7 @@ model WaitlistEntry {
 }
 
 model SurveyResponse {
-  id                  String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  id                  String     @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   email               String
   name                String?
   instagramHandle     String?
@@ -182,9 +182,14 @@ model SurveyResponse {
   biggestChallenge    String?
   interestedFeatures  String[]
   willingToPay        String?
-  betaTester          Boolean  @default(false)
+  betaTester          Boolean    @default(false)
   additionalComments  String?
-  createdAt           DateTime @default(now())
+  type                String?
+  igUsage             String?
+  manualDmVolume      String?
+  automationDepth     String?
+  primaryGoal         String?
+  createdAt           DateTime   @default(now())
 }
 
 enum SUBSCRIPTION_PLAN {
