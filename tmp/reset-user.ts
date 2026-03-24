@@ -12,7 +12,7 @@ async function resetVerification() {
       data: { isFollowerVerified: false, flowState: 'IDLE' }
     });
     console.log('✅ Update successful:', res);
-  } catch (err) {
+  } catch (err: any) {
     console.log('❌ Update failed (User might not exist in this table yet):', err.message);
   } finally {
     await prisma.$disconnect();
